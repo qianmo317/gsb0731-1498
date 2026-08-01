@@ -1,0 +1,91 @@
+/**
+ * SCSS 变量 - 教育亲和风格主题
+ */
+
+// 主题色
+$primary-color: #4a90e2; // 温和的蓝色
+$primary-hover: #357abd;
+$primary-active: #2868a8;
+$primary-light: #e8f4fd;
+
+$success-color: #52c41a;
+$warning-color: #faad14;
+$danger-color: #ff4d4f;
+$info-color: #909399;
+
+// 文本颜色
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-placeholder: #c0c4cc;
+
+// 背景色
+$bg-page: #f5f7fa;
+$bg-primary: #ffffff;
+$bg-secondary: #f5f7fa;
+$bg-hover: #f5f7fa;
+
+// 边框颜色
+$border-color: #dcdfe6;
+$border-light: #e4e7ed;
+$border-lighter: #ebeef5;
+
+// 圆角
+$border-radius: 8px;
+$border-radius-sm: 4px;
+$border-radius-lg: 12px;
+
+// 间距
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// 阴影
+$box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+$box-shadow-light: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+$box-shadow-dark: 0 4px 16px 0 rgba(0, 0, 0, 0.15);
+
+// 过渡
+$transition-base: all 0.3s ease;
+$transition-fast: all 0.2s ease;
+
+// 字体大小
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 18px;
+$font-size-xxl: 20px;
+
+// 侧边栏
+$sidebar-width: 220px;
+$sidebar-collapsed-width: 64px;
+$sidebar-bg: #ffffff;
+$sidebar-text: #303133;
+$sidebar-active-bg: #e8f4fd;
+$sidebar-active-text: #4a90e2;
+
+// 顶部导航
+$header-height: 60px;
+$header-bg: #ffffff;
+$header-border: #e4e7ed;
+
+// 标签颜色
+$tag-colors: (
+  'primary': #4a90e2,
+  'success': #52c41a,
+  'warning': #faad14,
+  'danger': #ff4d4f,
+  'info': #909399
+);
+
+// 状态颜色
+$status-colors: (
+  'active': #52c41a,
+  'inactive': #909399,
+  'pending': #faad14,
+  'completed': #52c41a,
+  'overdue': #ff4d4f
+);
