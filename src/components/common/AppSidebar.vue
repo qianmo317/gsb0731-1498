@@ -32,14 +32,16 @@
 import type { Component } from 'vue'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChatDotRound, DataAnalysis, Document, List, Reading, User } from '@element-plus/icons-vue'
+import { ChatDotRound, DataAnalysis, Document, List, Reading, User, Bell, Setting } from '@element-plus/icons-vue'
 
 const iconMap: Record<string, Component> = {
   ChatDotRound,
   DataAnalysis,
   Document,
   List,
-  User
+  User,
+  Bell,
+  Setting
 }
 
 const resolveIcon = (icon: unknown): Component | undefined => {

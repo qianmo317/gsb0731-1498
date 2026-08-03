@@ -18,8 +18,8 @@
           <div class="card-header">
             <div class="title-row">
               <h3 class="homework-title">{{ homework.title }}</h3>
-              <el-tag :type="getStatusType(homework.status)" size="small">
-                {{ formatStatus(homework.status) }}
+              <el-tag :type="getStatusType(getRealtimeStatus(homework))" size="small">
+                {{ formatStatus(getRealtimeStatus(homework)) }}
               </el-tag>
             </div>
             <div class="subject-row">
@@ -34,7 +34,7 @@
             <div class="info-item">
               <el-icon><Clock /></el-icon>
               <span class="label">截止时间：</span>
-              <span :class="{ 'text-danger': isOverdue(homework.dueDate) }">
+              <span :class="{ 'text-danger': isOverdue(homework) }">
                 {{ formatDateTime(homework.dueDate) }}
               </span>
             </div>
@@ -122,8 +122,8 @@
 import { Clock, User } from '@element-plus/icons-vue'
 import { formatDateTime } from '@/utils/date'
 import { formatStatus } from '@/utils/format'
-import { isExpired } from '@/utils/date'
-import type { Homework } from '@/types/homework'
+import { getHomeworkStatus, isHomeworkOverdue } from '@/utils/homework'
+import type { Homework, HomeworkStatus } from '@/types/homework'
 
 // Props
 interface Props {
@@ -140,6 +140,9 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+
+// 实时状态（按截止时间判定，与截止时间标红同一口径）
+const getRealtimeStatus = (homework: Homework): HomeworkStatus => getHomeworkStatus(homework)
 
 // 获取完成率
 const getCompletionRate = (homework: Homework): number => {
@@ -161,8 +164,10 @@ const getProgressColor = (percentage: number): string => {
 }
 
 // 获取状态类型
-const getStatusType = (status: string) => {
-  const map: Record<string, any> = {
+const getStatusType = (
+  status: string
+): 'info' | 'warning' | 'success' | 'danger' => {
+  const map: Record<string, 'info' | 'warning' | 'success' | 'danger'> = {
     pending: 'info',
     in_progress: 'warning',
     completed: 'success',
@@ -172,8 +177,10 @@ const getStatusType = (status: string) => {
 }
 
 // 获取难度类型
-const getDifficultyType = (difficulty: string) => {
-  const map: Record<string, any> = {
+const getDifficultyType = (
+  difficulty: string
+): 'success' | 'warning' | 'danger' | 'info' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
     easy: 'success',
     medium: 'warning',
     hard: 'danger'
@@ -181,10 +188,8 @@ const getDifficultyType = (difficulty: string) => {
   return map[difficulty] || 'info'
 }
 
-// 判断是否逾期
-const isOverdue = (dueDate: string): boolean => {
-  return isExpired(dueDate)
-}
+// 判断是否逾期（与状态标签同一口径）
+const isOverdue = (homework: Homework): boolean => isHomeworkOverdue(homework)
 
 // 查看详情
 const handleViewDetail = (homework: Homework) => {

@@ -88,6 +88,24 @@ const routes: RouteRecordRaw[] = [
           title: '沟通记录',
           icon: 'ChatDotRound'
         }
+      },
+      {
+        path: 'followup',
+        name: 'FollowUp',
+        component: () => import('@/views/followup/index.vue'),
+        meta: {
+          title: '学情跟进',
+          icon: 'Bell'
+        }
+      },
+      {
+        path: 'risk-settings',
+        name: 'RiskSettings',
+        component: () => import('@/views/settings/index.vue'),
+        meta: {
+          title: '预警设置',
+          icon: 'Setting'
+        }
       }
     ]
   },

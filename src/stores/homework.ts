@@ -3,9 +3,10 @@
  */
 
 import { defineStore } from 'pinia'
-import type { Homework, HomeworkSubmission, HomeworkFilterParams } from '@/types/homework'
+import type { Homework, HomeworkSubmission, HomeworkFilterParams, GradeFormData } from '@/types/homework'
 import type { PaginationParams } from '@/types/common'
 import * as homeworkApi from '@/api/homework'
+import { getHomeworkStatus, isHomeworkOverdue } from '@/utils/homework'
 
 export const useHomeworkStore = defineStore('homework', {
   state: () => ({
@@ -23,11 +24,12 @@ export const useHomeworkStore = defineStore('homework', {
     pendingGradeCount: state =>
       state.submissions.filter(s => s.status === 'submitted').length,
 
-    // 已完成作业数量
-    completedCount: state => state.homeworks.filter(h => h.status === 'completed').length,
+    // 已完成作业数量（按实时状态判定）
+    completedCount: state =>
+      state.homeworks.filter(h => getHomeworkStatus(h) === 'completed').length,
 
-    // 逾期作业数量
-    overdueCount: state => state.homeworks.filter(h => h.status === 'overdue').length
+    // 逾期作业数量（统一按截止时间实时判定，不读写死 status）
+    overdueCount: state => state.homeworks.filter(h => isHomeworkOverdue(h)).length
   },
 
   actions: {
@@ -88,7 +90,7 @@ export const useHomeworkStore = defineStore('homework', {
     },
 
     // 批改作业
-    async gradeHomework(submissionId: string, data: any) {
+    async gradeHomework(submissionId: string, data: GradeFormData) {
       this.loading = true
       try {
         const updated = await homeworkApi.gradeHomework(submissionId, data)
@@ -109,7 +111,7 @@ export const useHomeworkStore = defineStore('homework', {
     },
 
     // 批量批改作业
-    async batchGradeHomework(submissionIds: string[], data: any) {
+    async batchGradeHomework(submissionIds: string[], data: GradeFormData) {
       this.loading = true
       try {
         await homeworkApi.batchGradeHomework(submissionIds, data)

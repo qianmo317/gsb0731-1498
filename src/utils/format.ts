@@ -101,6 +101,38 @@ export const formatDifficulty = (difficulty: string): string => {
   return formatStatus(difficulty)
 }
 
+// 格式化风险等级
+export const formatRiskLevel = (level: string): string => {
+  const map: Record<string, string> = {
+    high: '高风险',
+    medium: '中风险',
+    low: '低风险'
+  }
+  return map[level] || level
+}
+
+// 格式化跟进状态
+export const formatFollowUpStatus = (status: string): string => {
+  const map: Record<string, string> = {
+    pending: '待跟进',
+    in_progress: '跟进中',
+    resolved: '已解决'
+  }
+  return map[status] || status
+}
+
+// 获取风险等级标签类型
+export const getRiskTagType = (
+  level: string
+): 'danger' | 'warning' | 'success' | 'info' => {
+  const map: Record<string, 'danger' | 'warning' | 'success' | 'info'> = {
+    high: 'danger',
+    medium: 'warning',
+    low: 'success'
+  }
+  return map[level] || 'info'
+}
+
 // 首字母大写
 export const capitalize = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)

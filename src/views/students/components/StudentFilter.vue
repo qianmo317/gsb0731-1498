@@ -41,6 +41,20 @@
         </el-select>
       </el-form-item>
 
+      <el-form-item label="风险等级">
+        <el-select
+          v-model="filterForm.riskLevel"
+          placeholder="请选择风险等级"
+          clearable
+          style="width: 150px"
+          @change="handleFilter"
+        >
+          <el-option label="高风险" value="high" />
+          <el-option label="中风险" value="medium" />
+          <el-option label="低风险" value="low" />
+        </el-select>
+      </el-form-item>
+
       <el-form-item label="分组">
         <el-select
           v-model="filterForm.group"
@@ -111,10 +125,15 @@
 import { reactive } from 'vue'
 import { Search, RefreshLeft } from '@element-plus/icons-vue'
 import type { StudentFilterParams } from '@/types/student'
+import type { RiskLevel } from '@/types/risk'
+
+export interface StudentFilterValue extends StudentFilterParams {
+  riskLevel?: RiskLevel
+}
 
 // Props
 interface Props {
-  modelValue?: StudentFilterParams
+  modelValue?: StudentFilterValue
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -123,7 +142,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 interface Emits {
-  (e: 'update:modelValue', value: StudentFilterParams): void
+  (e: 'update:modelValue', value: StudentFilterValue): void
   (e: 'search'): void
   (e: 'reset'): void
 }
@@ -131,10 +150,11 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 // 筛选表单
-const filterForm = reactive<StudentFilterParams>({
+const filterForm = reactive<StudentFilterValue>({
   keyword: props.modelValue.keyword || '',
   status: props.modelValue.status,
   level: props.modelValue.level,
+  riskLevel: props.modelValue.riskLevel,
   group: props.modelValue.group,
   grade: props.modelValue.grade,
   tags: props.modelValue.tags || []
@@ -157,6 +177,7 @@ const handleReset = () => {
   filterForm.keyword = ''
   filterForm.status = undefined
   filterForm.level = undefined
+  filterForm.riskLevel = undefined
   filterForm.group = undefined
   filterForm.grade = undefined
   filterForm.tags = []

@@ -23,11 +23,13 @@
               </el-descriptions-item>
               <el-descriptions-item label="总分">{{ homework.totalScore }}</el-descriptions-item>
               <el-descriptions-item label="截止时间">
-                {{ formatDateTime(homework.dueDate) }}
+                <span :class="{ 'text-danger': homework && isOverdue(homework) }">
+                  {{ formatDateTime(homework.dueDate) }}
+                </span>
               </el-descriptions-item>
               <el-descriptions-item label="状态">
-                <el-tag :type="getStatusType(homework.status)">
-                  {{ formatStatus(homework.status) }}
+                <el-tag :type="getStatusType(getRealtimeStatus(homework))">
+                  {{ formatStatus(getRealtimeStatus(homework)) }}
                 </el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="作业描述" :span="3">
@@ -112,7 +114,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useHomeworkStore } from '@/stores'
 import { formatStatus } from '@/utils/format'
 import { formatDateTime } from '@/utils/date'
-import type { Homework, HomeworkSubmission } from '@/types/homework'
+import { getHomeworkStatus, isHomeworkOverdue } from '@/utils/homework'
+import type { Homework, HomeworkSubmission, HomeworkStatus } from '@/types/homework'
 
 const route = useRoute()
 const router = useRouter()
@@ -123,6 +126,11 @@ const submissionsLoading = ref(false)
 const homework = ref<Homework | null>(null)
 const submissions = ref<HomeworkSubmission[]>([])
 const statusFilter = ref('')
+
+const getRealtimeStatus = (hw: Homework | null): HomeworkStatus =>
+  hw ? getHomeworkStatus(hw) : 'pending'
+
+const isOverdue = (hw: Homework): boolean => isHomeworkOverdue(hw)
 
 const goBack = () => {
   router.back()
@@ -145,8 +153,10 @@ const handleGrade = (row: HomeworkSubmission) => {
   router.push(`/homework/grade/${row.id}`)
 }
 
-const getDifficultyType = (difficulty: string) => {
-  const map: Record<string, any> = {
+const getDifficultyType = (
+  difficulty: string
+): 'success' | 'warning' | 'danger' | 'info' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
     easy: 'success',
     medium: 'warning',
     hard: 'danger'
@@ -154,8 +164,10 @@ const getDifficultyType = (difficulty: string) => {
   return map[difficulty] || 'info'
 }
 
-const getStatusType = (status: string) => {
-  const map: Record<string, any> = {
+const getStatusType = (
+  status: string
+): 'info' | 'warning' | 'success' | 'danger' => {
+  const map: Record<string, 'info' | 'warning' | 'success' | 'danger'> = {
     pending: 'info',
     in_progress: 'warning',
     completed: 'success',
@@ -164,8 +176,10 @@ const getStatusType = (status: string) => {
   return map[status] || 'info'
 }
 
-const getSubmissionStatusType = (status: string) => {
-  const map: Record<string, any> = {
+const getSubmissionStatusType = (
+  status: string
+): 'info' | 'warning' | 'success' => {
+  const map: Record<string, 'info' | 'warning' | 'success'> = {
     not_submitted: 'info',
     submitted: 'warning',
     graded: 'success'
@@ -218,5 +232,10 @@ onMounted(async () => {
 
 .mt-20 {
   margin-top: 20px;
+}
+
+.text-danger {
+  color: #f56c6c;
+  font-weight: 500;
 }
 </style>
