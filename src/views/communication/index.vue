@@ -133,7 +133,7 @@
 import { ref, onMounted } from 'vue'
 import { Plus, Search, Star } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useCommunicationStore, useStudentStore } from '@/stores'
+import { useCommunicationStore, useStudentStore, useRiskStore } from '@/stores'
 import { useTable } from '@/composables/useTable'
 import { formatStatus } from '@/utils/format'
 import { formatDateTime } from '@/utils/date'
@@ -144,6 +144,7 @@ import type { Student } from '@/types/student'
 
 const communicationStore = useCommunicationStore()
 const studentStore = useStudentStore()
+const riskStore = useRiskStore()
 
 const keyword = ref('')
 const filters = ref({
@@ -203,11 +204,12 @@ const handleView = (record: CommunicationRecord) => {
   detailDialogVisible.value = true
 }
 
-// 标记已解决
+// 标记已解决 -> 联动重新计算该学生因沟通产生的风险
 const handleResolve = async (record: CommunicationRecord) => {
   try {
     await communicationStore.markAsResolved(record.id)
-    ElMessage.success('已标记为已解决')
+    riskStore.syncCommunicationResolved(record.studentId)
+    ElMessage.success('已标记为已解决，该学生风险等级已更新')
     refresh()
   } catch (error) {
     ElMessage.error('操作失败')
@@ -251,8 +253,8 @@ const handleFormCancel = () => {
   communicationFormRef.value?.resetForm()
 }
 
-const getTypeColor = (type: string) => {
-  const map: Record<string, any> = {
+const getTypeColor = (type: string): 'primary' | 'success' | 'warning' | 'info' => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'info'> = {
     question: 'primary',
     feedback: 'success',
     parent: 'warning',

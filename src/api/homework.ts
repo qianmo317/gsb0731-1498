@@ -11,6 +11,7 @@ import type {
 import type { PaginationParams, PaginationResponse } from '@/types/common'
 import { getMockData, updateMockData } from '@/mock'
 import { delay, paginate } from '@/mock/utils'
+import { getHomeworkStatus, withRealtimeStatus } from '@/utils/homework'
 
 // 获取作业列表
 export const getHomeworkList = async (
@@ -20,6 +21,9 @@ export const getHomeworkList = async (
 
   const mockData = getMockData()
   let homeworks = mockData.homeworks as Homework[]
+
+  // 统一按截止时间实时计算状态（不使用数据里写死的 status）
+  homeworks = withRealtimeStatus(homeworks)
 
   // 筛选
   if (params.keyword) {
@@ -66,7 +70,8 @@ export const getHomeworkDetail = async (id: string): Promise<Homework> => {
     throw new Error('作业不存在')
   }
 
-  return homework
+  // 统一按截止时间实时计算状态
+  return { ...homework, status: getHomeworkStatus(homework) }
 }
 
 // 获取作业提交列表
@@ -145,17 +150,18 @@ export const gradeHomework = async (
   if (homework) {
     const homeworkSubmissions = submissions.filter(s => s.homeworkId === homework.id)
     const gradedSubmissions = homeworkSubmissions.filter(s => s.status === 'graded')
+    const submittedSubmissions = homeworkSubmissions.filter(s => s.status !== 'not_submitted')
 
     homework.gradedCount = gradedSubmissions.length
+    homework.submittedCount = submittedSubmissions.length
     homework.averageScore =
-      gradedSubmissions.reduce((sum, s) => sum + (s.score || 0), 0) / gradedSubmissions.length
+      gradedSubmissions.length > 0
+        ? gradedSubmissions.reduce((sum, s) => sum + (s.score || 0), 0) / gradedSubmissions.length
+        : 0
     homework.excellentCount = gradedSubmissions.filter(s => s.isExcellent).length
 
-    if (homework.gradedCount === homework.totalCount) {
-      homework.status = 'completed'
-    } else if (homework.gradedCount > 0) {
-      homework.status = 'in_progress'
-    }
+    // 状态统一按截止时间 + 提交/批改情况实时计算
+    homework.status = getHomeworkStatus(homework)
 
     updateMockData('homeworks', mockData.homeworks)
   }

@@ -42,7 +42,9 @@
         </el-table-column>
         <el-table-column prop="dueDate" label="截止时间" width="180">
           <template #default="{ row }">
-            {{ formatDateTime(row.dueDate) }}
+            <span :class="{ 'text-danger': isOverdue(row) }">
+              {{ formatDateTime(row.dueDate) }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="完成情况" width="150">
@@ -63,8 +65,8 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ formatStatus(row.status) }}
+            <el-tag :type="getStatusType(getRealtimeStatus(row))">
+              {{ formatStatus(getRealtimeStatus(row)) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -97,7 +99,8 @@ import { useHomeworkStore } from '@/stores'
 import { useTable } from '@/composables/useTable'
 import { formatStatus } from '@/utils/format'
 import { formatDateTime } from '@/utils/date'
-import type { Homework } from '@/types/homework'
+import { getHomeworkStatus, isHomeworkOverdue } from '@/utils/homework'
+import type { Homework, HomeworkStatus } from '@/types/homework'
 
 const router = useRouter()
 const homeworkStore = useHomeworkStore()
@@ -120,6 +123,12 @@ const {
   fetchData: params => homeworkStore.fetchHomeworks(params)
 })
 
+// 统一实时状态（按截止时间判定）
+const getRealtimeStatus = (row: Homework): HomeworkStatus => getHomeworkStatus(row)
+
+// 是否逾期（与状态标签同一口径）
+const isOverdue = (row: Homework): boolean => isHomeworkOverdue(row)
+
 const handleSearch = () => {
   refresh()
 }
@@ -136,8 +145,10 @@ const handleGrade = (row: Homework) => {
   router.push(`/homework/grade/${row.id}`)
 }
 
-const getDifficultyType = (difficulty: string) => {
-  const map: Record<string, any> = {
+const getDifficultyType = (
+  difficulty: string
+): 'success' | 'warning' | 'danger' | 'info' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
     easy: 'success',
     medium: 'warning',
     hard: 'danger'
@@ -145,8 +156,10 @@ const getDifficultyType = (difficulty: string) => {
   return map[difficulty] || 'info'
 }
 
-const getStatusType = (status: string) => {
-  const map: Record<string, any> = {
+const getStatusType = (
+  status: string
+): 'info' | 'warning' | 'success' | 'danger' => {
+  const map: Record<string, 'info' | 'warning' | 'success' | 'danger'> = {
     pending: 'info',
     in_progress: 'warning',
     completed: 'success',
@@ -171,6 +184,11 @@ const getStatusType = (status: string) => {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.text-danger {
+  color: #f56c6c;
+  font-weight: 500;
 }
 
 .el-pagination {
