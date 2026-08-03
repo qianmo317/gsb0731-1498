@@ -26,8 +26,8 @@
                 {{ formatDateTime(homework.dueDate) }}
               </el-descriptions-item>
               <el-descriptions-item label="状态">
-                <el-tag :type="getStatusType(homework.status)">
-                  {{ formatStatus(homework.status) }}
+                <el-tag :type="getStatusType(resolveHomeworkStatus(homework))">
+                  {{ formatStatus(resolveHomeworkStatus(homework)) }}
                 </el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="作业描述" :span="3">
@@ -112,6 +112,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useHomeworkStore } from '@/stores'
 import { formatStatus } from '@/utils/format'
 import { formatDateTime } from '@/utils/date'
+import { resolveHomeworkStatus } from '@/utils/risk'
 import type { Homework, HomeworkSubmission } from '@/types/homework'
 
 const route = useRoute()

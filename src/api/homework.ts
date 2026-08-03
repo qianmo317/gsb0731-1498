@@ -11,6 +11,7 @@ import type {
 import type { PaginationParams, PaginationResponse } from '@/types/common'
 import { getMockData, updateMockData } from '@/mock'
 import { delay, paginate } from '@/mock/utils'
+import { resolveHomeworkStatus } from '@/utils/risk'
 
 // 获取作业列表
 export const getHomeworkList = async (
@@ -30,7 +31,7 @@ export const getHomeworkList = async (
   }
 
   if (params.status) {
-    homeworks = homeworks.filter(h => h.status === params.status)
+    homeworks = homeworks.filter(h => resolveHomeworkStatus(h) === params.status)
   }
 
   if (params.subject) {

@@ -63,8 +63,8 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ formatStatus(row.status) }}
+            <el-tag :type="getStatusType(resolveHomeworkStatus(row))">
+              {{ formatStatus(resolveHomeworkStatus(row)) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -97,6 +97,7 @@ import { useHomeworkStore } from '@/stores'
 import { useTable } from '@/composables/useTable'
 import { formatStatus } from '@/utils/format'
 import { formatDateTime } from '@/utils/date'
+import { resolveHomeworkStatus } from '@/utils/risk'
 import type { Homework } from '@/types/homework'
 
 const router = useRouter()
