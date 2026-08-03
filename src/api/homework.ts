@@ -2,26 +2,52 @@
  * 作业相关 API
  */
 
+import dayjs from 'dayjs'
 import type {
   Homework,
   HomeworkSubmission,
   HomeworkFilterParams,
+  HomeworkStatus,
   GradeFormData
 } from '@/types/homework'
 import type { PaginationParams, PaginationResponse } from '@/types/common'
 import { getMockData, updateMockData } from '@/mock'
 import { delay, paginate } from '@/mock/utils'
 
-// 获取作业列表
+const isHomeworkPastDue = (homework: Homework): boolean => {
+  const dueDate = dayjs(homework.dueDate)
+  if (!dueDate.isValid()) return false
+  return dueDate.isBefore(dayjs())
+}
+
+const getEffectiveHomeworkStatus = (homework: Homework): HomeworkStatus => {
+  if (homework.gradedCount === homework.totalCount) {
+    return 'completed'
+  }
+  if (isHomeworkPastDue(homework) && homework.submittedCount < homework.totalCount) {
+    return 'overdue'
+  }
+  if (homework.submittedCount > 0 || homework.gradedCount > 0) {
+    return 'in_progress'
+  }
+  return 'pending'
+}
+
+const withEffectiveStatus = (homework: Homework): Homework => {
+  return {
+    ...homework,
+    status: getEffectiveHomeworkStatus(homework)
+  }
+}
+
 export const getHomeworkList = async (
   params: PaginationParams & HomeworkFilterParams
 ): Promise<PaginationResponse<Homework>> => {
   await delay()
 
   const mockData = getMockData()
-  let homeworks = mockData.homeworks as Homework[]
+  let homeworks = (mockData.homeworks as Homework[]).map(withEffectiveStatus)
 
-  // 筛选
   if (params.keyword) {
     const keyword = params.keyword.toLowerCase()
     homeworks = homeworks.filter(
@@ -49,13 +75,11 @@ export const getHomeworkList = async (
     })
   }
 
-  // 按创建时间倒序排序
   homeworks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return paginate(homeworks, params.page, params.pageSize)
 }
 
-// 获取作业详情
 export const getHomeworkDetail = async (id: string): Promise<Homework> => {
   await delay()
 
@@ -66,10 +90,9 @@ export const getHomeworkDetail = async (id: string): Promise<Homework> => {
     throw new Error('作业不存在')
   }
 
-  return homework
+  return withEffectiveStatus(homework)
 }
 
-// 获取作业提交列表
 export const getHomeworkSubmissions = async (
   homeworkId: string,
   params?: { status?: string }
@@ -81,12 +104,10 @@ export const getHomeworkSubmissions = async (
     s => s.homeworkId === homeworkId
   )
 
-  // 筛选状态
   if (params?.status) {
     submissions = submissions.filter(s => s.status === params.status)
   }
 
-  // 按提交时间倒序排序
   submissions.sort((a, b) => {
     if (!a.submitTime) return 1
     if (!b.submitTime) return -1
@@ -96,7 +117,6 @@ export const getHomeworkSubmissions = async (
   return submissions
 }
 
-// 获取单个提交详情
 export const getSubmissionDetail = async (id: string): Promise<HomeworkSubmission> => {
   await delay()
 
@@ -110,7 +130,6 @@ export const getSubmissionDetail = async (id: string): Promise<HomeworkSubmissio
   return submission
 }
 
-// 批改作业
 export const gradeHomework = async (
   submissionId: string,
   data: GradeFormData
@@ -125,7 +144,6 @@ export const gradeHomework = async (
     throw new Error('提交记录不存在')
   }
 
-  // 更新提交记录
   submissions[index] = {
     ...submissions[index],
     status: 'graded',
@@ -138,7 +156,6 @@ export const gradeHomework = async (
 
   updateMockData('submissions', submissions)
 
-  // 更新作业统计
   const homework = (mockData.homeworks as Homework[]).find(
     h => h.id === submissions[index].homeworkId
   )
@@ -163,7 +180,6 @@ export const gradeHomework = async (
   return submissions[index]
 }
 
-// 批量批改作业
 export const batchGradeHomework = async (
   submissionIds: string[],
   data: GradeFormData
@@ -175,7 +191,6 @@ export const batchGradeHomework = async (
   }
 }
 
-// 获取待批改作业数量
 export const getPendingGradeCount = async (): Promise<number> => {
   await delay()
 

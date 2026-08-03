@@ -88,31 +88,130 @@
           </el-card>
         </el-col>
       </el-row>
+
+      <el-card class="risk-profile-card mt-20" v-if="riskProfile" v-loading="riskLoading">
+        <template #header>
+          <div class="card-header">
+            <span>风险档案</span>
+            <div class="header-right">
+              <el-tag
+                v-if="riskProfile.thresholdSource === 'group'"
+                type="success"
+                effect="dark"
+                size="small"
+              >
+                分组阈值{{ riskProfile.studentGroup ? `·${riskProfile.studentGroup}` : '' }}
+              </el-tag>
+              <el-tag v-else type="info" effect="plain" size="small">全局阈值</el-tag>
+              <el-tag :type="getRiskTagType(riskProfile.level)" size="large" effect="dark">
+                {{ getRiskLabel(riskProfile.level) }}
+              </el-tag>
+              <span class="risk-score">风险评分 {{ riskProfile.score }}</span>
+              <el-button text type="primary" @click="goToCommunication">查看沟通记录</el-button>
+            </div>
+          </div>
+        </template>
+
+        <el-row :gutter="16" class="factor-row">
+          <el-col :span="6" v-for="factor in riskProfile.factors" :key="factor.dimension">
+            <div
+              class="factor-card"
+              :class="[
+                `factor-${factor.level}`,
+                { 'factor-hit': factor.level !== 'low' }
+              ]"
+            >
+              <div class="factor-header">
+                <span class="factor-label">{{ factor.label }}</span>
+                <el-tag
+                  :type="factor.level === 'high' ? 'danger' : factor.level === 'medium' ? 'warning' : 'success'"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ factor.level === 'high' ? '命中高风险' : factor.level === 'medium' ? '命中中风险' : '正常' }}
+                </el-tag>
+              </div>
+              <div class="factor-value">{{ factor.value }}</div>
+              <div class="factor-threshold">
+                中风险阈值 {{ factor.mediumThreshold }} / 高风险阈值 {{ factor.highThreshold }}
+              </div>
+              <div class="factor-desc">{{ factor.description }}</div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <el-divider content-position="left">关联跟进沟通</el-divider>
+
+        <div v-if="riskProfile.followUpCommunications.length > 0" class="timeline-wrapper">
+          <el-timeline>
+            <el-timeline-item
+              v-for="comm in riskProfile.followUpCommunications"
+              :key="comm.id"
+              :timestamp="formatDateTime(comm.createdAt)"
+              placement="top"
+              :color="comm.isResolved ? '#67c23a' : comm.isImportant ? '#e6a23c' : '#409eff'"
+            >
+              <el-card shadow="hover" class="comm-card">
+                <div class="comm-header">
+                  <span class="comm-title">{{ comm.title }}</span>
+                  <div>
+                    <el-tag :type="comm.isResolved ? 'success' : 'warning'" size="small">
+                      {{ comm.isResolved ? '已解决' : '待处理' }}
+                    </el-tag>
+                    <el-tag v-if="comm.isImportant" type="danger" size="small" style="margin-left: 4px">
+                      重要
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="comm-meta">
+                  <el-tag size="small" type="info">{{ formatStatus(comm.type) }}</el-tag>
+                  <el-tag size="small" type="info" style="margin-left: 4px">{{ formatStatus(comm.method) }}</el-tag>
+                </div>
+              </el-card>
+            </el-timeline-item>
+          </el-timeline>
+        </div>
+        <el-empty v-else description="暂无跟进沟通记录" :image-size="60" />
+      </el-card>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useStudentStore } from '@/stores'
+import { useStudentStore, useRiskStore } from '@/stores'
 import { formatStatus } from '@/utils/format'
+import { formatDateTime } from '@/utils/date'
+import { getRiskTagType, getRiskLabel } from '@/utils/risk'
 import type { Student, StudentStudyRecord } from '@/types/student'
+import type { StudentRiskProfile } from '@/types/risk'
 
 const route = useRoute()
 const router = useRouter()
 const studentStore = useStudentStore()
+const riskStore = useRiskStore()
 
 const loading = ref(false)
+const riskLoading = computed(() => riskStore.loading)
 const student = ref<Student | null>(null)
 const studyRecords = ref<StudentStudyRecord[]>([])
+
+const riskProfile = computed<StudentRiskProfile | null>(() => {
+  const id = route.params.id as string
+  return riskStore.getStudentRiskProfile(id)
+})
 
 const goBack = () => {
   router.back()
 }
 
+const goToCommunication = () => {
+  router.push('/communication')
+}
+
 const getStatusType = (status: string) => {
-  const map: Record<string, any> = {
+  const map: Record<string, string> = {
     active: 'success',
     inactive: 'info',
     graduated: 'warning'
@@ -121,7 +220,7 @@ const getStatusType = (status: string) => {
 }
 
 const getLevelType = (level: string) => {
-  const map: Record<string, any> = {
+  const map: Record<string, string> = {
     excellent: 'success',
     good: 'primary',
     average: 'warning',
@@ -139,6 +238,10 @@ onMounted(async () => {
 
     await studentStore.fetchStudyRecords(id, { page: 1, pageSize: 10 })
     studyRecords.value = studentStore.studyRecords
+
+    if (riskStore.studentRisks.length === 0) {
+      await riskStore.calculateRisks()
+    }
   } finally {
     loading.value = false
   }
@@ -184,6 +287,108 @@ onMounted(async () => {
     .stat-label {
       font-size: 14px;
       color: #909399;
+    }
+  }
+}
+
+.risk-profile-card {
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .risk-score {
+      font-size: 14px;
+      color: #606266;
+    }
+  }
+}
+
+.factor-row {
+  .factor-card {
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s;
+
+    &.factor-hit {
+      border-width: 2px;
+    }
+
+    &.factor-high {
+      border-color: #f56c6c;
+      background: #fef0f0;
+    }
+
+    &.factor-medium {
+      border-color: #e6a23c;
+      background: #fdf6ec;
+    }
+
+    &.factor-low {
+      border-color: #e1f3d8;
+      background: #f0f9eb;
+    }
+
+    .factor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+
+      .factor-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+
+    .factor-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #303133;
+      line-height: 1.2;
+    }
+
+    .factor-threshold {
+      font-size: 12px;
+      color: #909399;
+      margin-top: 4px;
+    }
+
+    .factor-desc {
+      font-size: 13px;
+      color: #606266;
+      margin-top: 8px;
+    }
+  }
+}
+
+.timeline-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+
+  .comm-card {
+    .comm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .comm-title {
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+
+    .comm-meta {
+      margin-top: 8px;
     }
   }
 }

@@ -24,6 +24,73 @@
       </el-row>
     </div>
 
+    <el-card class="risk-overview-card mt-20" v-loading="riskLoading">
+      <template #header>
+        <div class="card-header">
+          <span>学情风险概览</span>
+          <el-button text type="primary" @click="goToStudentList()">
+            查看全部学生
+          </el-button>
+        </div>
+      </template>
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <div
+            class="risk-stat-card risk-high"
+            @click="goToStudentList('high')"
+          >
+            <div class="risk-stat-value">{{ riskOverview.highCount }}</div>
+            <div class="risk-stat-label">高风险学生</div>
+            <div class="risk-stat-desc">需立即干预</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div
+            class="risk-stat-card risk-medium"
+            @click="goToStudentList('medium')"
+          >
+            <div class="risk-stat-value">{{ riskOverview.mediumCount }}</div>
+            <div class="risk-stat-label">中风险学生</div>
+            <div class="risk-stat-desc">建议关注</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div
+            class="risk-stat-card risk-low"
+            @click="goToStudentList('low')"
+          >
+            <div class="risk-stat-value">{{ riskOverview.lowCount }}</div>
+            <div class="risk-stat-label">低风险学生</div>
+            <div class="risk-stat-desc">状态良好</div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div
+            class="risk-stat-card risk-pending"
+            @click="goToPendingFollowUp"
+          >
+            <div class="risk-stat-value">{{ riskOverview.pendingFollowUpCount }}</div>
+            <div class="risk-stat-label">待跟进</div>
+            <div class="risk-stat-desc">需处理沟通</div>
+          </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <el-card class="chart-card mt-20" v-loading="riskLoading">
+      <template #header>
+        <div class="card-header">
+          <span>近八周风险等级趋势</span>
+          <span class="chart-hint">历史周为快照数据，本周为实时值</span>
+        </div>
+      </template>
+      <MultiLineChart
+        :x-data="riskTrendXData"
+        :series="riskTrendSeries"
+        height="300px"
+      />
+    </el-card>
+
     <el-row :gutter="20" class="mt-20">
       <el-col :span="12">
         <el-card class="chart-card">
@@ -66,15 +133,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { User, Document, ChatDotRound, Clock, CaretTop, CaretBottom } from '@element-plus/icons-vue'
-import { useStatisticsStore } from '@/stores'
+import { useStatisticsStore, useRiskStore } from '@/stores'
 import LineChart from '@/components/charts/LineChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
+import MultiLineChart from '@/components/charts/MultiLineChart.vue'
+import type { RiskLevel } from '@/types/risk'
 
+const router = useRouter()
 const statisticsStore = useStatisticsStore()
+const riskStore = useRiskStore()
 const timeRange = ref<'daily' | 'weekly' | 'monthly'>('daily')
 
-// 监听时间范围变化，重新获取数据
 watch(timeRange, async (newRange) => {
   await statisticsStore.fetchStudyTimeTrend(newRange)
   await statisticsStore.fetchCompletionRateTrend(newRange)
@@ -113,6 +184,17 @@ const overviewCards = computed(() => {
   ]
 })
 
+const riskOverview = computed(() => riskStore.riskOverview)
+const riskLoading = computed(() => riskStore.loading)
+
+const riskTrend = computed(() => riskStore.riskTrend)
+const riskTrendXData = computed(() => riskTrend.value.map(p => p.label))
+const riskTrendSeries = computed(() => [
+  { name: '高风险', data: riskTrend.value.map(p => p.highCount), color: '#f56c6c' },
+  { name: '中风险', data: riskTrend.value.map(p => p.mediumCount), color: '#e6a23c' },
+  { name: '低风险', data: riskTrend.value.map(p => p.lowCount), color: '#67c23a' }
+])
+
 const studyTimeData = computed(() => {
   const trend = statisticsStore.studyTimeTrend
   if (!trend) return []
@@ -145,7 +227,20 @@ const progressData = computed(() => {
   }))
 })
 
+const goToStudentList = (riskLevel?: RiskLevel) => {
+  if (riskLevel) {
+    router.push({ path: '/students', query: { riskLevel } })
+  } else {
+    router.push('/students')
+  }
+}
+
+const goToPendingFollowUp = () => {
+  router.push({ path: '/students', query: { pendingFollowUp: 'true' } })
+}
+
 onMounted(async () => {
+  await riskStore.calculateRisks()
   await statisticsStore.fetchDashboardOverview()
   await statisticsStore.fetchStudyTimeTrend('daily')
   await statisticsStore.fetchCompletionRateTrend('daily')
@@ -201,11 +296,93 @@ onMounted(async () => {
   }
 }
 
+.risk-overview-card {
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.risk-stat-card {
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .risk-stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .risk-stat-label {
+    font-size: 15px;
+    color: #606266;
+    margin-top: 8px;
+  }
+
+  .risk-stat-desc {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 4px;
+  }
+
+  &.risk-high {
+    background: #fef0f0;
+    border-color: #fde2e2;
+
+    .risk-stat-value {
+      color: #f56c6c;
+    }
+  }
+
+  &.risk-medium {
+    background: #fdf6ec;
+    border-color: #faecd8;
+
+    .risk-stat-value {
+      color: #e6a23c;
+    }
+  }
+
+  &.risk-low {
+    background: #f0f9eb;
+    border-color: #e1f3d8;
+
+    .risk-stat-value {
+      color: #67c23a;
+    }
+  }
+
+  &.risk-pending {
+    background: #ecf5ff;
+    border-color: #d9ecff;
+
+    .risk-stat-value {
+      color: #409eff;
+    }
+  }
+}
+
 .chart-card {
   .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+
+  .chart-hint {
+    font-size: 12px;
+    color: #909399;
+    font-weight: normal;
   }
 }
 

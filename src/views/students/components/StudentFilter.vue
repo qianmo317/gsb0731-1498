@@ -41,6 +41,20 @@
         </el-select>
       </el-form-item>
 
+      <el-form-item label="风险">
+        <el-select
+          v-model="filterForm.riskLevel"
+          placeholder="请选择风险等级"
+          clearable
+          style="width: 150px"
+          @change="handleFilter"
+        >
+          <el-option label="高风险" value="high" />
+          <el-option label="中风险" value="medium" />
+          <el-option label="低风险" value="low" />
+        </el-select>
+      </el-form-item>
+
       <el-form-item label="分组">
         <el-select
           v-model="filterForm.group"
@@ -135,6 +149,7 @@ const filterForm = reactive<StudentFilterParams>({
   keyword: props.modelValue.keyword || '',
   status: props.modelValue.status,
   level: props.modelValue.level,
+  riskLevel: props.modelValue.riskLevel,
   group: props.modelValue.group,
   grade: props.modelValue.grade,
   tags: props.modelValue.tags || []
@@ -157,6 +172,7 @@ const handleReset = () => {
   filterForm.keyword = ''
   filterForm.status = undefined
   filterForm.level = undefined
+  filterForm.riskLevel = undefined
   filterForm.group = undefined
   filterForm.grade = undefined
   filterForm.tags = []
