@@ -133,7 +133,7 @@
 import { ref, onMounted } from 'vue'
 import { Plus, Search, Star } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useCommunicationStore, useStudentStore } from '@/stores'
+import { useCommunicationStore, useStudentStore, useRiskStore } from '@/stores'
 import { useTable } from '@/composables/useTable'
 import { formatStatus } from '@/utils/format'
 import { formatDateTime } from '@/utils/date'
@@ -144,6 +144,7 @@ import type { Student } from '@/types/student'
 
 const communicationStore = useCommunicationStore()
 const studentStore = useStudentStore()
+const riskStore = useRiskStore()
 
 const keyword = ref('')
 const filters = ref({
@@ -209,6 +210,7 @@ const handleResolve = async (record: CommunicationRecord) => {
     await communicationStore.markAsResolved(record.id)
     ElMessage.success('已标记为已解决')
     refresh()
+    riskStore.calculateRisks()
   } catch (error) {
     ElMessage.error('操作失败')
   }
@@ -238,6 +240,7 @@ const handleFormSubmit = async (formData: CommunicationFormData) => {
     ElMessage.success('添加成功')
     dialogVisible.value = false
     refresh()
+    riskStore.calculateRisks()
   } catch (error) {
     ElMessage.error('添加失败')
   } finally {

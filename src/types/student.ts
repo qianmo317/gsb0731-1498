@@ -43,6 +43,12 @@ export interface StudentFilterParams {
   group?: string
   tags?: string[]
   grade?: string
+  riskLevel?: 'high' | 'medium' | 'low'
+  studentIds?: string[]
+  pendingFollowUp?: boolean
+  sortProp?: string
+  sortOrder?: 'ascending' | 'descending' | null
+  orderedIds?: string[]
 }
 
 // 学生表单数据

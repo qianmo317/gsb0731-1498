@@ -53,7 +53,36 @@ export const getStudentList = async (
     students = students.filter(s => params.tags!.some(tag => s.tags.includes(tag)))
   }
 
-  // 确保有默认的分页参数
+  if (params.studentIds && params.studentIds.length > 0) {
+    students = students.filter(s => params.studentIds!.includes(s.id))
+  }
+
+  if (params.orderedIds && params.orderedIds.length > 0) {
+    const idIndex = new Map(params.orderedIds.map((id, index) => [id, index]))
+    students = [...students].sort((a, b) => {
+      const indexA = idIndex.get(a.id)
+      const indexB = idIndex.get(b.id)
+      if (indexA === undefined && indexB === undefined) return 0
+      if (indexA === undefined) return 1
+      if (indexB === undefined) return -1
+      return indexA - indexB
+    })
+  } else if (params.sortProp && params.sortOrder) {
+    const sortProp = params.sortProp as keyof Student
+    const sortOrder = params.sortOrder === 'ascending' ? 1 : -1
+    students = [...students].sort((a, b) => {
+      const valA = a[sortProp]
+      const valB = b[sortProp]
+      if (valA == null && valB == null) return 0
+      if (valA == null) return 1
+      if (valB == null) return -1
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return (valA - valB) * sortOrder
+      }
+      return String(valA).localeCompare(String(valB)) * sortOrder
+    })
+  }
+
   const page = params.page || 1
   const pageSize = params.pageSize || 20
 
