@@ -6,6 +6,13 @@ import { defineStore } from 'pinia'
 import type { CommunicationRecord, CommunicationFilterParams } from '@/types/communication'
 import type { PaginationParams } from '@/types/common'
 import * as communicationApi from '@/api/communication'
+import { useRiskStore } from './risk'
+
+// 沟通数据变更后重新评估学生风险
+const reevaluateRisk = async () => {
+  const riskStore = useRiskStore()
+  await riskStore.evaluateAll()
+}
 
 export const useCommunicationStore = defineStore('communication', {
   state: () => ({
@@ -62,6 +69,7 @@ export const useCommunicationStore = defineStore('communication', {
         const newCommunication = await communicationApi.createCommunication(data)
         this.communications.unshift(newCommunication)
         this.total++
+        await reevaluateRisk()
         return newCommunication
       } catch (error) {
         console.error('创建沟通记录失败:', error)
@@ -83,6 +91,7 @@ export const useCommunicationStore = defineStore('communication', {
         if (this.currentCommunication?.id === id) {
           this.currentCommunication = updated
         }
+        await reevaluateRisk()
         return updated
       } catch (error) {
         console.error('更新沟通记录失败:', error)
@@ -99,6 +108,7 @@ export const useCommunicationStore = defineStore('communication', {
         await communicationApi.deleteCommunication(id)
         this.communications = this.communications.filter(c => c.id !== id)
         this.total--
+        await reevaluateRisk()
       } catch (error) {
         console.error('删除沟通记录失败:', error)
         throw error
@@ -115,6 +125,7 @@ export const useCommunicationStore = defineStore('communication', {
         if (index !== -1) {
           this.communications[index] = updated
         }
+        await reevaluateRisk()
         return updated
       } catch (error) {
         console.error('标记为已解决失败:', error)

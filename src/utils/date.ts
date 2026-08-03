@@ -41,6 +41,11 @@ export const getThisWeek = (): [string, string] => {
   return [start, end]
 }
 
+// 获取本周一的日期（作为周快照的键）
+export const getWeekStart = (): string => {
+  return dayjs().startOf('week').format('YYYY-MM-DD')
+}
+
 // 获取本月的开始和结束日期
 export const getThisMonth = (): [string, string] => {
   const start = dayjs().startOf('month').format('YYYY-MM-DD')
