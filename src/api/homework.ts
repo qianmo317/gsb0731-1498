@@ -11,6 +11,19 @@ import type {
 import type { PaginationParams, PaginationResponse } from '@/types/common'
 import { getMockData, updateMockData } from '@/mock'
 import { delay, paginate } from '@/mock/utils'
+import { isExpired } from '@/utils/date'
+
+// 统一逾期口径：按当前时间是否已过截止时间实时判断，不沿用数据里写死的状态
+export const normalizeHomeworkStatus = (homework: Homework): Homework => {
+  if (
+    homework.status !== 'completed' &&
+    homework.submittedCount < homework.totalCount &&
+    isExpired(homework.dueDate)
+  ) {
+    return { ...homework, status: 'overdue' }
+  }
+  return homework
+}
 
 // 获取作业列表
 export const getHomeworkList = async (
@@ -19,7 +32,7 @@ export const getHomeworkList = async (
   await delay()
 
   const mockData = getMockData()
-  let homeworks = mockData.homeworks as Homework[]
+  let homeworks = (mockData.homeworks as Homework[]).map(normalizeHomeworkStatus)
 
   // 筛选
   if (params.keyword) {
@@ -60,7 +73,7 @@ export const getHomeworkDetail = async (id: string): Promise<Homework> => {
   await delay()
 
   const mockData = getMockData()
-  const homework = (mockData.homeworks as Homework[]).find(h => h.id === id)
+  const homework = (mockData.homeworks as Homework[]).map(normalizeHomeworkStatus).find(h => h.id === id)
 
   if (!homework) {
     throw new Error('作业不存在')

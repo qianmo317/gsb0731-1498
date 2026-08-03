@@ -25,6 +25,12 @@
     </div>
 
     <el-row :gutter="20" class="mt-20">
+      <el-col :span="24">
+        <RiskOverview />
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20" class="mt-20">
       <el-col :span="12">
         <el-card class="chart-card">
           <template #header>
@@ -70,6 +76,7 @@ import { User, Document, ChatDotRound, Clock, CaretTop, CaretBottom } from '@ele
 import { useStatisticsStore } from '@/stores'
 import LineChart from '@/components/charts/LineChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
+import RiskOverview from './components/RiskOverview.vue'
 
 const statisticsStore = useStatisticsStore()
 const timeRange = ref<'daily' | 'weekly' | 'monthly'>('daily')

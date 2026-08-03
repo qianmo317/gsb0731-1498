@@ -6,6 +6,13 @@ import { defineStore } from 'pinia'
 import type { Homework, HomeworkSubmission, HomeworkFilterParams } from '@/types/homework'
 import type { PaginationParams } from '@/types/common'
 import * as homeworkApi from '@/api/homework'
+import { useRiskStore } from './risk'
+
+// 作业批改数据变更后重新评估学生风险
+const reevaluateRisk = async () => {
+  const riskStore = useRiskStore()
+  await riskStore.evaluateAll()
+}
 
 export const useHomeworkStore = defineStore('homework', {
   state: () => ({
@@ -99,6 +106,7 @@ export const useHomeworkStore = defineStore('homework', {
         if (this.currentSubmission?.id === submissionId) {
           this.currentSubmission = updated
         }
+        await reevaluateRisk()
         return updated
       } catch (error) {
         console.error('批改作业失败:', error)
@@ -117,6 +125,7 @@ export const useHomeworkStore = defineStore('homework', {
         if (this.currentHomework) {
           await this.fetchSubmissions(this.currentHomework.id)
         }
+        await reevaluateRisk()
       } catch (error) {
         console.error('批量批改作业失败:', error)
         throw error

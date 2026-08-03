@@ -2,6 +2,8 @@
  * 学生相关类型定义
  */
 
+import type { RiskLevel } from './risk'
+
 // 学生状态
 export type StudentStatus = 'active' | 'inactive' | 'graduated'
 
@@ -43,6 +45,7 @@ export interface StudentFilterParams {
   group?: string
   tags?: string[]
   grade?: string
+  riskLevel?: RiskLevel // 风险等级筛选，由前端风险预警结果过滤
 }
 
 // 学生表单数据
