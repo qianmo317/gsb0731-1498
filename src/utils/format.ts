@@ -85,7 +85,9 @@ export const formatStatus = (status: string): string => {
     poor: '较差',
     easy: '简单',
     medium: '中等',
-    hard: '困难'
+    hard: '困难',
+    high: '高风险',
+    low: '低风险'
   }
 
   return statusMap[status] || status

@@ -1,5 +1,37 @@
 <template>
   <div class="dashboard">
+    <!-- 风险概览 -->
+    <el-card v-if="riskOverview" class="risk-overview" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>学情风险概览</span>
+          <el-button link type="primary" @click="goToRiskList()">查看全部</el-button>
+        </div>
+      </template>
+      <div class="risk-cards">
+        <div
+          v-for="item in riskCards"
+          :key="item.level"
+          class="risk-card"
+          :class="item.level"
+          @click="goToRiskList(item.level)"
+        >
+          <div class="risk-count">{{ item.count }}</div>
+          <div class="risk-label">{{ item.label }}</div>
+        </div>
+        <div class="risk-card pending" @click="goToRiskList()">
+          <div class="risk-count">{{ riskOverview.pendingFollowUp }}</div>
+          <div class="risk-label">待跟进</div>
+        </div>
+      </div>
+
+      <!-- 近八周各等级人数趋势 -->
+      <div class="risk-trend">
+        <div class="trend-title">近八周风险趋势</div>
+        <RiskTrendChart :data="riskTrend" height="280px" />
+      </div>
+    </el-card>
+
     <div class="overview-cards">
       <el-row :gutter="20">
         <el-col :span="6" v-for="card in overviewCards" :key="card.title">
@@ -66,13 +98,40 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { User, Document, ChatDotRound, Clock, CaretTop, CaretBottom } from '@element-plus/icons-vue'
-import { useStatisticsStore } from '@/stores'
+import { useStatisticsStore, useRiskStore } from '@/stores'
+import { RISK_LEVEL_LABELS } from '@/utils/risk'
+import type { RiskLevel } from '@/types/risk'
 import LineChart from '@/components/charts/LineChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
+import RiskTrendChart from '@/components/charts/RiskTrendChart.vue'
 
+const router = useRouter()
 const statisticsStore = useStatisticsStore()
+const riskStore = useRiskStore()
 const timeRange = ref<'daily' | 'weekly' | 'monthly'>('daily')
+
+// 风险概览
+const riskOverview = computed(() => riskStore.overview)
+
+// 近八周风险趋势
+const riskTrend = computed(() => riskStore.trend)
+
+const riskCards = computed<{ level: RiskLevel; label: string; count: number }[]>(() => {
+  const overview = riskStore.overview
+  if (!overview) return []
+  return [
+    { level: 'high', label: RISK_LEVEL_LABELS.high, count: overview.high },
+    { level: 'medium', label: RISK_LEVEL_LABELS.medium, count: overview.medium },
+    { level: 'low', label: RISK_LEVEL_LABELS.low, count: overview.low }
+  ]
+})
+
+// 跳转到已按条件筛好的学生列表
+const goToRiskList = (level?: RiskLevel) => {
+  router.push({ path: '/students', query: level ? { riskLevel: level } : {} })
+}
 
 // 监听时间范围变化，重新获取数据
 watch(timeRange, async (newRange) => {
@@ -147,6 +206,8 @@ const progressData = computed(() => {
 
 onMounted(async () => {
   await statisticsStore.fetchDashboardOverview()
+  await riskStore.fetchRiskOverview()
+  await riskStore.fetchRiskTrend()
   await statisticsStore.fetchStudyTimeTrend('daily')
   await statisticsStore.fetchCompletionRateTrend('daily')
   await statisticsStore.fetchStudentProgressComparison()
@@ -156,6 +217,72 @@ onMounted(async () => {
 <style scoped lang="scss">
 .dashboard {
   padding: 24px;
+}
+
+.risk-overview {
+  margin-bottom: 20px;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .risk-cards {
+    display: flex;
+    gap: 16px;
+
+    .risk-card {
+      flex: 1;
+      padding: 16px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      color: #fff;
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+
+      .risk-count {
+        font-size: 28px;
+        font-weight: 600;
+      }
+
+      .risk-label {
+        font-size: 14px;
+        margin-top: 4px;
+        opacity: 0.9;
+      }
+
+      &.high {
+        background: #ff4d4f;
+      }
+
+      &.medium {
+        background: #faad14;
+      }
+
+      &.low {
+        background: #52c41a;
+      }
+
+      &.pending {
+        background: #4a90e2;
+      }
+    }
+  }
+
+  .risk-trend {
+    margin-top: 24px;
+
+    .trend-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #303133;
+      margin-bottom: 12px;
+    }
+  }
 }
 
 .stat-card {
